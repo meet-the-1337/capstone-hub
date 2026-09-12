@@ -394,4 +394,184 @@ export class FacultyService {
       projects: projectProgressList,
     };
   }
+
+  /**
+   * Retrieve combined monitoring dashboard response for faculty.
+   */
+  public static async getFacultyDashboard(
+    facultyId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!facultyId || typeof facultyId !== 'string' || !facultyId.trim()) {
+      throw new AppError('Faculty ID is required', 400);
+    }
+
+    if (user.role !== Role.FACULTY) {
+      throw new AppError('Access denied: faculty role required', 403);
+    }
+
+    const faculty = await prisma.user.findUnique({
+      where: { id: facultyId.trim() },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    if (!faculty) {
+      throw new AppError('Faculty user not found', 404);
+    }
+
+    // Fetch projects with all relations needed for dashboard
+    const projects = await prisma.project.findMany({
+      where: { facultyId: faculty.id },
+      include: {
+        team: {
+          include: {
+            lead: { select: { id: true, name: true, email: true } },
+            members: {
+              include: {
+                user: { select: { id: true, name: true, email: true, role: true } },
+              },
+            },
+          },
+        },
+        milestones: {
+          orderBy: { createdAt: 'asc' },
+        },
+        requirements: {
+          orderBy: { createdAt: 'asc' },
+        },
+        userStories: {
+          include: {
+            tasks: true,
+          },
+        },
+        sprints: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Compute progress for each project
+    const projectProgressList = projects.map((p) => {
+      const progress = this.computeProjectProgress(p);
+      return {
+        ...progress,
+        team: p.team
+          ? {
+              id: p.team.id,
+              name: p.team.name,
+              lead: p.team.lead,
+              memberCount: p.team.members.length,
+            }
+          : null,
+      };
+    });
+
+    // Collect all pending reviews across projects
+    const pendingReviews: {
+      projectId: string;
+      projectName: string;
+      requirementId: string;
+      title: string;
+      priority: string;
+      type: string;
+      version: number;
+      createdAt: Date;
+    }[] = [];
+
+    projects.forEach((p) => {
+      (p.requirements || []).forEach((r) => {
+        if (r.status === 'IN_REVIEW') {
+          pendingReviews.push({
+            projectId: p.id,
+            projectName: p.name,
+            requirementId: r.id,
+            title: r.title,
+            priority: r.priority,
+            type: r.type,
+            version: r.version,
+            createdAt: r.createdAt,
+          });
+        }
+      });
+    });
+
+    // Collect upcoming deadlines / milestones across projects
+    const upcomingDeadlines: {
+      projectId: string;
+      projectName: string;
+      milestoneId: string;
+      title: string;
+      status: string;
+      dueDate: Date | null;
+    }[] = [];
+
+    projects.forEach((p) => {
+      (p.milestones || []).forEach((m) => {
+        if (m.status !== 'COMPLETED') {
+          upcomingDeadlines.push({
+            projectId: p.id,
+            projectName: p.name,
+            milestoneId: m.id,
+            title: m.title,
+            status: m.status,
+            dueDate: m.dueDate,
+          });
+        }
+      });
+    });
+
+    // Recent activity logs for overseen projects
+    const projectIds = projects.map((p) => p.id);
+    const recentActivity = await prisma.activityLog.findMany({
+      where: {
+        projectId: { in: projectIds },
+      },
+      include: {
+        actor: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    // Unread notifications for faculty
+    const unreadNotificationsCount = await prisma.notification.count({
+      where: {
+        userId: faculty.id,
+        read: false,
+      },
+    });
+
+    // Compute summary metrics
+    const totalProjects = projectProgressList.length;
+    const totalMilestones = projectProgressList.reduce((acc, p) => acc + p.milestones.total, 0);
+    const completedMilestones = projectProgressList.reduce((acc, p) => acc + p.milestones.completed, 0);
+    const totalTasks = projectProgressList.reduce((acc, p) => acc + p.tasks.total, 0);
+    const doneTasks = projectProgressList.reduce((acc, p) => acc + p.tasks.done, 0);
+    const totalPendingReviews = pendingReviews.length;
+
+    const overallAverageProgress =
+      totalProjects > 0
+        ? Math.round(
+            projectProgressList.reduce((acc, p) => acc + p.overallProgressPercentage, 0) /
+              totalProjects
+          )
+        : 0;
+
+    return {
+      faculty,
+      summary: {
+        totalProjects,
+        totalMilestones,
+        completedMilestones,
+        totalTasks,
+        doneTasks,
+        pendingReviewsCount: totalPendingReviews,
+        unreadNotificationsCount,
+        overallAverageProgress,
+      },
+      projects: projectProgressList,
+      pendingReviews,
+      upcomingDeadlines,
+      recentActivity,
+    };
+  }
 }

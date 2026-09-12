@@ -105,4 +105,29 @@ export class FacultyController {
       next(error);
     }
   }
+
+  /**
+   * Get combined dashboard data for faculty.
+   */
+  public static async getFacultyDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const facultyId = req.params.facultyId || req.user.id;
+      const result = await FacultyService.getFacultyDashboard(facultyId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }
