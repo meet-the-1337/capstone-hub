@@ -155,4 +155,101 @@ export class NotificationController {
       next(error);
     }
   }
+
+  /**
+   * Mark a single notification as read.
+   */
+  public static async markAsRead(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const { id } = req.params;
+      const notification = await NotificationService.markAsRead(id, req.user);
+      res.status(200).json({
+        success: true,
+        message: 'Notification marked as read',
+        data: notification,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Mark a single notification as unread.
+   */
+  public static async markAsUnread(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const { id } = req.params;
+      const notification = await NotificationService.markAsUnread(id, req.user);
+      res.status(200).json({
+        success: true,
+        message: 'Notification marked as unread',
+        data: notification,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Mark all unread notifications as read for current user.
+   */
+  public static async markAllAsRead(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const result = await NotificationService.markAllAsRead(req.user.id);
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: { count: result.count },
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Get unread notifications count for current user.
+   */
+  public static async getUnreadCount(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const result = await NotificationService.getUnreadCount(req.user.id);
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }

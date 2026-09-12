@@ -415,6 +415,113 @@ export class NotificationService {
   }
 
   /**
+   * Mark a single notification as read.
+   */
+  public static async markAsRead(
+    notificationId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!notificationId || typeof notificationId !== 'string' || !notificationId.trim()) {
+      throw new AppError('Notification ID is required', 400);
+    }
+
+    const notification = await prisma.notification.findUnique({
+      where: { id: notificationId.trim() },
+    });
+
+    if (!notification) {
+      throw new AppError('Notification not found', 404);
+    }
+
+    if (notification.userId !== user.id && user.role !== Role.FACULTY) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    return prisma.notification.update({
+      where: { id: notification.id },
+      data: {
+        read: true,
+        readAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Mark a single notification as unread.
+   */
+  public static async markAsUnread(
+    notificationId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!notificationId || typeof notificationId !== 'string' || !notificationId.trim()) {
+      throw new AppError('Notification ID is required', 400);
+    }
+
+    const notification = await prisma.notification.findUnique({
+      where: { id: notificationId.trim() },
+    });
+
+    if (!notification) {
+      throw new AppError('Notification not found', 404);
+    }
+
+    if (notification.userId !== user.id && user.role !== Role.FACULTY) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    return prisma.notification.update({
+      where: { id: notification.id },
+      data: {
+        read: false,
+        readAt: null,
+      },
+    });
+  }
+
+  /**
+   * Mark all unread notifications as read for a user.
+   */
+  public static async markAllAsRead(userId: string) {
+    if (!userId || typeof userId !== 'string' || !userId.trim()) {
+      throw new AppError('User ID is required', 400);
+    }
+
+    const result = await prisma.notification.updateMany({
+      where: {
+        userId: userId.trim(),
+        read: false,
+      },
+      data: {
+        read: true,
+        readAt: new Date(),
+      },
+    });
+
+    return {
+      count: result.count,
+      message: 'All notifications marked as read',
+    };
+  }
+
+  /**
+   * Retrieve unread notifications count for a user.
+   */
+  public static async getUnreadCount(userId: string) {
+    if (!userId || typeof userId !== 'string' || !userId.trim()) {
+      throw new AppError('User ID is required', 400);
+    }
+
+    const unreadCount = await prisma.notification.count({
+      where: {
+        userId: userId.trim(),
+        read: false,
+      },
+    });
+
+    return { unreadCount };
+  }
+
+  /**
    * Retrieve all notifications for a specific project (e.g. for team audit/monitoring).
    */
   public static async getProjectNotifications(
