@@ -79,6 +79,8 @@ router.post('/:projectId/github/connect', GitHubController.connectRepository);
 router.post('/:projectId/github', GitHubController.connectRepository);
 router.delete('/:projectId/github/disconnect', GitHubController.disconnectRepository);
 router.delete('/:projectId/github', GitHubController.disconnectRepository);
+router.get('/:projectId/github/metadata', GitHubController.getRepoMetadata);
+router.get('/:projectId/github/repo', GitHubController.getRepoMetadata);
 
 export default router;
 

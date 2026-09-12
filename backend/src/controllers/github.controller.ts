@@ -78,4 +78,29 @@ export class GitHubController {
       next(error);
     }
   }
+
+  /**
+   * Get GitHub repository metadata for a project.
+   */
+  public static async getRepoMetadata(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const projectId = req.params.projectId;
+      const result = await GitHubService.getRepoMetadata(projectId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }
