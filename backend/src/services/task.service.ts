@@ -14,6 +14,7 @@ export interface UpdateTaskDTO {
   description?: string;
   status?: TaskStatus;
   assigneeId?: string | null;
+  userStoryId?: string;
 }
 
 const ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
@@ -174,5 +175,105 @@ export class TaskService {
 
     await prisma.task.delete({ where: { id: task.id } });
     return { message: 'Task deleted successfully' };
+  }
+
+  /**
+   * Link or move a task to a different user story within the same project.
+   */
+  public static async linkTaskToStory(
+    taskId: string,
+    targetStoryId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!taskId || !taskId.trim()) throw new AppError('Task ID is required', 400);
+    if (!targetStoryId || !targetStoryId.trim()) throw new AppError('Target User Story ID is required', 400);
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId.trim() },
+      include: {
+        userStory: {
+          include: {
+            project: {
+              include: {
+                team: {
+                  include: {
+                    members: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!task) throw new AppError('Task not found', 404);
+    if (!this.canAccessProject(user, task.userStory.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const targetStory = await prisma.userStory.findUnique({
+      where: { id: targetStoryId.trim() },
+    });
+
+    if (!targetStory) throw new AppError('Target User Story not found', 404);
+
+    if (targetStory.projectId !== task.userStory.projectId) {
+      throw new AppError('Cannot link task to user story in a different project', 400);
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id: task.id },
+      data: { userStoryId: targetStory.id },
+      include: {
+        userStory: true,
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'Task linked to User Story successfully',
+      task: updatedTask,
+    };
+  }
+
+  /**
+   * Get the parent user story for a task.
+   */
+  public static async getStoryByTask(taskId: string, user?: { id: string; role: Role }) {
+    if (!taskId || !taskId.trim()) throw new AppError('Task ID is required', 400);
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId.trim() },
+      include: {
+        userStory: {
+          include: {
+            project: {
+              include: {
+                team: {
+                  include: {
+                    members: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!task) throw new AppError('Task not found', 404);
+    if (user && !this.canAccessProject(user, task.userStory.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    return task.userStory;
   }
 }

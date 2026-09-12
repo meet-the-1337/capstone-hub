@@ -23,5 +23,7 @@ router.get('/:storyId/requirements', RequirementController.getLinkedRequirements
 // Task routes on user story
 router.get('/:storyId/tasks', TaskController.getTasksByUserStory);
 router.post('/:storyId/tasks', TaskController.createTask);
+router.post('/:storyId/tasks/:taskId', TaskController.linkTaskToStory);
+router.put('/:storyId/tasks/:taskId', TaskController.linkTaskToStory);
 
 export default router;
