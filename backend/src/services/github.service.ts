@@ -29,6 +29,17 @@ export interface GetBranchesQueryDTO {
   limit?: number | string;
 }
 
+export interface GetPullRequestsQueryDTO {
+  state?: 'open' | 'closed' | 'all' | string;
+  head?: string;
+  base?: string;
+  sort?: 'created' | 'updated' | 'popularity' | 'long-running' | string;
+  direction?: 'asc' | 'desc' | string;
+  page?: number | string;
+  per_page?: number | string;
+  limit?: number | string;
+}
+
 export class GitHubService {
   /**
    * Helper to verify if user can manage GitHub settings for a project (FACULTY or TEAM_LEAD).
@@ -532,6 +543,107 @@ export class GitHubService {
       perPage,
       totalCount: branches.length,
       branches,
+    };
+  }
+
+  /**
+   * Retrieve pull requests for a connected project's repository.
+   */
+  public static async getRepoPullRequests(
+    projectId: string,
+    query: GetPullRequestsQueryDTO,
+    user: { id: string; role: Role }
+  ) {
+    if (!projectId || typeof projectId !== 'string' || !projectId.trim()) {
+      throw new AppError('Project ID is required', 400);
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId.trim() },
+      include: {
+        team: {
+          include: {
+            members: true,
+          },
+        },
+        githubConnection: true,
+      },
+    });
+
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+
+    if (!this.canViewProjectGitHub(user, project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    if (!project.githubConnection) {
+      throw new AppError('No GitHub repository is connected to this project', 404);
+    }
+
+    const { repoOwner, repoName } = project.githubConnection;
+    const state = query.state || 'open';
+    const page = Math.max(1, Number(query.page) || 1);
+    const perPage = Math.min(100, Math.max(1, Number(query.per_page || query.limit) || 30));
+
+    const params = new URLSearchParams();
+    params.append('state', state);
+    if (query.head) params.append('head', query.head);
+    if (query.base) params.append('base', query.base);
+    if (query.sort) params.append('sort', query.sort);
+    if (query.direction) params.append('direction', query.direction);
+    params.append('page', String(page));
+    params.append('per_page', String(perPage));
+
+    const rawPulls = await this.fetchFromGitHub<any[]>(
+      `/repos/${repoOwner}/${repoName}/pulls?${params.toString()}`,
+      project.githubConnection
+    );
+
+    const pullRequests = Array.isArray(rawPulls)
+      ? rawPulls.map((item) => ({
+          id: item.id,
+          number: item.number,
+          title: item.title || '',
+          body: item.body || null,
+          state: item.state,
+          isDraft: item.draft ?? false,
+          htmlUrl: item.html_url || `https://github.com/${repoOwner}/${repoName}/pull/${item.number}`,
+          user: {
+            username: item.user?.login || 'Unknown',
+            avatarUrl: item.user?.avatar_url || null,
+            htmlUrl: item.user?.html_url || null,
+          },
+          head: {
+            label: item.head?.label || '',
+            ref: item.head?.ref || '',
+            sha: item.head?.sha || '',
+          },
+          base: {
+            label: item.base?.label || '',
+            ref: item.base?.ref || '',
+            sha: item.base?.sha || '',
+          },
+          labels: Array.isArray(item.labels)
+            ? item.labels.map((l: any) => (typeof l === 'string' ? l : l.name || ''))
+            : [],
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+          closedAt: item.closed_at || null,
+          mergedAt: item.merged_at || null,
+          isMerged: Boolean(item.merged_at),
+        }))
+      : [];
+
+    return {
+      repoOwner,
+      repoName,
+      state,
+      page,
+      perPage,
+      totalCount: pullRequests.length,
+      pullRequests,
     };
   }
 }

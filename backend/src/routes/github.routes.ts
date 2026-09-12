@@ -22,4 +22,9 @@ router.get('/:projectId/commits', GitHubController.getRepoCommits);
 // GitHub branches routes
 router.get('/:projectId/branches', GitHubController.getRepoBranches);
 
+// GitHub pull requests routes
+router.get('/:projectId/pulls', GitHubController.getRepoPullRequests);
+router.get('/:projectId/pull-requests', GitHubController.getRepoPullRequests);
+router.get('/:projectId/prs', GitHubController.getRepoPullRequests);
+
 export default router;
