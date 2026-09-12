@@ -86,6 +86,8 @@ router.get('/:projectId/github/branches', GitHubController.getRepoBranches);
 router.get('/:projectId/github/pulls', GitHubController.getRepoPullRequests);
 router.get('/:projectId/github/pull-requests', GitHubController.getRepoPullRequests);
 router.get('/:projectId/github/prs', GitHubController.getRepoPullRequests);
+router.get('/:projectId/github/contributors', GitHubController.getRepoContributors);
+router.get('/:projectId/github/activity', GitHubController.getRepoActivity);
 
 export default router;
 

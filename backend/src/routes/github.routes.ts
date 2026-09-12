@@ -27,4 +27,8 @@ router.get('/:projectId/pulls', GitHubController.getRepoPullRequests);
 router.get('/:projectId/pull-requests', GitHubController.getRepoPullRequests);
 router.get('/:projectId/prs', GitHubController.getRepoPullRequests);
 
+// GitHub contributors and activity routes
+router.get('/:projectId/contributors', GitHubController.getRepoContributors);
+router.get('/:projectId/activity', GitHubController.getRepoActivity);
+
 export default router;
