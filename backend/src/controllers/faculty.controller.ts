@@ -55,4 +55,54 @@ export class FacultyController {
       next(error);
     }
   }
+
+  /**
+   * Get progress data for a single project.
+   */
+  public static async getProjectProgressData(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const { projectId } = req.params;
+      const result = await FacultyService.getProjectProgressData(projectId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Get aggregated progress data across all overseen projects.
+   */
+  public static async getAllOverseenProgressData(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const facultyId = req.params.facultyId || req.user.id;
+      const result = await FacultyService.getAllOverseenProgressData(facultyId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }
