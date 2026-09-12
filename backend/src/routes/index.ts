@@ -11,6 +11,7 @@ import taskRoutes from './task.routes';
 import notificationRoutes from './notification.routes';
 import facultyRoutes from './faculty.routes';
 import githubRoutes from './github.routes';
+import bugRoutes from './bug.routes';
 
 const apiRouter = Router();
 
@@ -28,5 +29,6 @@ apiRouter.use('/tasks', taskRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/faculty', facultyRoutes);
 apiRouter.use('/github', githubRoutes);
+apiRouter.use('/bugs', bugRoutes);
 
 export default apiRouter;

@@ -25,6 +25,8 @@ model User {
   ledTeams      Team[]         @relation("TeamLead")
   facultyReview Project[]      @relation("FacultyAdvisor")
   tasks         Task[]
+  reportedBugs  Bug[]          @relation("BugReporter")
+  assignedBugs  Bug[]          @relation("BugAssignee")
   activityLogs  ActivityLog[]
   notifications Notification[]
 
@@ -43,6 +45,7 @@ model Project {
   requirements Requirement[]
   userStories  UserStory[]
   sprints      Sprint[]
+  bugs         Bug[]
   githubConnection GitHubConnection?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -103,6 +106,7 @@ model Requirement {
   project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   versions       RequirementVersion[]
   userStories    RequirementUserStory[]
+  bugs           Bug[]
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
@@ -165,6 +169,7 @@ model UserStory {
   sprint       Sprint?                @relation(fields: [sprintId], references: [id], onDelete: SetNull)
   tasks        Task[]
   requirements RequirementUserStory[]
+  bugs         Bug[]
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
 
@@ -187,6 +192,7 @@ model Sprint {
   project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userStories UserStory[]
   tasks       Task[]
+  bugs        Bug[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -211,6 +217,7 @@ model Task {
   assignee    User?       @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
   sprintId    String?
   sprint      Sprint?     @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  bugs        Bug[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -304,6 +311,62 @@ model GitHubConnection {
   updatedAt     DateTime @updatedAt
 
   @@map("github_connections")
+}
+
+enum BugPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BugSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BugStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Bug {
+  id             String        @id @default(uuid())
+  title          String
+  description    String?
+  priority       BugPriority   @default(MEDIUM)
+  severity       BugSeverity   @default(MEDIUM)
+  status         BugStatus     @default(OPEN)
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requirementId  String?
+  requirement    Requirement?  @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  userStoryId    String?
+  userStory      UserStory?    @relation(fields: [userStoryId], references: [id], onDelete: SetNull)
+  taskId         String?
+  task           Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  sprintId       String?
+  sprint         Sprint?       @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  pullRequestUrl String?
+  prNumber       Int?
+  reporterId     String
+  reporter       User          @relation("BugReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  assigneeId     String?
+  assignee       User?         @relation("BugAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([requirementId])
+  @@index([userStoryId])
+  @@index([taskId])
+  @@index([sprintId])
+  @@map("bugs")
 }
 
 
