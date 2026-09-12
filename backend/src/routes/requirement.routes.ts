@@ -17,6 +17,13 @@ router.post('/:id/review', RequirementController.reviewRequirement);
 router.post('/:id/approve', RequirementController.approveRequirement);
 router.post('/:id/reject', RequirementController.rejectRequirement);
 
+// Requirement - User Story links
+router.post('/:id/stories', RequirementController.linkUserStory);
+router.post('/:requirementId/stories/:storyId', RequirementController.linkUserStory);
+router.delete('/:id/stories/:storyId', RequirementController.unlinkUserStory);
+router.delete('/:requirementId/stories/:storyId', RequirementController.unlinkUserStory);
+router.get('/:id/stories', RequirementController.getLinkedStories);
+
 // Requirement CRUD
 router.post('/', RequirementController.createRequirement);
 router.get('/:id', RequirementController.getRequirementById);

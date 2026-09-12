@@ -812,4 +812,249 @@ export class RequirementService {
 
     return { message: 'Requirement deleted successfully' };
   }
+
+  /**
+   * Link a user story to a requirement.
+   */
+  public static async linkUserStory(
+    requirementId: string,
+    userStoryId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!requirementId || !requirementId.trim()) {
+      throw new AppError('Requirement ID is required', 400);
+    }
+    if (!userStoryId || !userStoryId.trim()) {
+      throw new AppError('User Story ID is required', 400);
+    }
+
+    const requirement = await prisma.requirement.findUnique({
+      where: { id: requirementId.trim() },
+      include: {
+        project: {
+          include: {
+            team: {
+              include: {
+                members: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!requirement) {
+      throw new AppError('Requirement not found', 404);
+    }
+
+    if (!this.canAccessProject(user, requirement.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const userStory = await prisma.userStory.findUnique({
+      where: { id: userStoryId.trim() },
+    });
+
+    if (!userStory) {
+      throw new AppError('User Story not found', 404);
+    }
+
+    // Both requirement and user story must belong to the same project
+    if (userStory.projectId !== requirement.projectId) {
+      throw new AppError('Cannot link requirement and user story from different projects', 400);
+    }
+
+    const link = await prisma.requirementUserStory.upsert({
+      where: {
+        requirementId_userStoryId: {
+          requirementId: requirement.id,
+          userStoryId: userStory.id,
+        },
+      },
+      create: {
+        requirementId: requirement.id,
+        userStoryId: userStory.id,
+      },
+      update: {},
+    });
+
+    return {
+      message: 'Requirement linked to User Story successfully',
+      link,
+      requirement: {
+        id: requirement.id,
+        title: requirement.title,
+      },
+      userStory: {
+        id: userStory.id,
+        title: userStory.title,
+      },
+    };
+  }
+
+  /**
+   * Unlink a user story from a requirement.
+   */
+  public static async unlinkUserStory(
+    requirementId: string,
+    userStoryId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!requirementId || !requirementId.trim()) {
+      throw new AppError('Requirement ID is required', 400);
+    }
+    if (!userStoryId || !userStoryId.trim()) {
+      throw new AppError('User Story ID is required', 400);
+    }
+
+    const requirement = await prisma.requirement.findUnique({
+      where: { id: requirementId.trim() },
+      include: {
+        project: {
+          include: {
+            team: {
+              include: {
+                members: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!requirement) {
+      throw new AppError('Requirement not found', 404);
+    }
+
+    if (!this.canAccessProject(user, requirement.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const existingLink = await prisma.requirementUserStory.findUnique({
+      where: {
+        requirementId_userStoryId: {
+          requirementId: requirement.id,
+          userStoryId: userStoryId.trim(),
+        },
+      },
+    });
+
+    if (!existingLink) {
+      throw new AppError('Link between Requirement and User Story not found', 404);
+    }
+
+    await prisma.requirementUserStory.delete({
+      where: {
+        requirementId_userStoryId: {
+          requirementId: requirement.id,
+          userStoryId: userStoryId.trim(),
+        },
+      },
+    });
+
+    return { message: 'Requirement unlinked from User Story successfully' };
+  }
+
+  /**
+   * Get all user stories linked to a requirement.
+   */
+  public static async getLinkedStories(
+    requirementId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!requirementId || !requirementId.trim()) {
+      throw new AppError('Requirement ID is required', 400);
+    }
+
+    const requirement = await prisma.requirement.findUnique({
+      where: { id: requirementId.trim() },
+      include: {
+        project: {
+          include: {
+            team: {
+              include: {
+                members: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!requirement) {
+      throw new AppError('Requirement not found', 404);
+    }
+
+    if (!this.canAccessProject(user, requirement.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const links = await prisma.requirementUserStory.findMany({
+      where: { requirementId: requirement.id },
+      include: {
+        userStory: {
+          include: {
+            tasks: true,
+            sprint: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return links.map((l) => ({
+      linkId: l.id,
+      linkedAt: l.createdAt,
+      userStory: l.userStory,
+    }));
+  }
+
+  /**
+   * Get all requirements linked to a user story.
+   */
+  public static async getLinkedRequirementsForStory(
+    userStoryId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!userStoryId || !userStoryId.trim()) {
+      throw new AppError('User Story ID is required', 400);
+    }
+
+    const userStory = await prisma.userStory.findUnique({
+      where: { id: userStoryId.trim() },
+      include: {
+        project: {
+          include: {
+            team: {
+              include: {
+                members: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!userStory) {
+      throw new AppError('User Story not found', 404);
+    }
+
+    if (!this.canAccessProject(user, userStory.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const links = await prisma.requirementUserStory.findMany({
+      where: { userStoryId: userStory.id },
+      include: {
+        requirement: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return links.map((l) => ({
+      linkId: l.id,
+      linkedAt: l.createdAt,
+      requirement: l.requirement,
+    }));
+  }
 }

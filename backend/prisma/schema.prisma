@@ -91,19 +91,20 @@ enum RequirementStatus {
 }
 
 model Requirement {
-  id             String               @id @default(uuid())
+  id             String                 @id @default(uuid())
   title          String
   description    String
-  type           RequirementType      @default(FUNCTIONAL)
-  priority       RequirementPriority  @default(MEDIUM)
-  status         RequirementStatus    @default(DRAFT)
+  type           RequirementType        @default(FUNCTIONAL)
+  priority       RequirementPriority    @default(MEDIUM)
+  status         RequirementStatus      @default(DRAFT)
   reviewFeedback String?
-  version        Int                  @default(1)
+  version        Int                    @default(1)
   projectId      String
-  project        Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   versions       RequirementVersion[]
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  userStories    RequirementUserStory[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
 
   @@map("requirements")
 }
@@ -125,6 +126,18 @@ model RequirementVersion {
   @@map("requirement_versions")
 }
 
+model RequirementUserStory {
+  id            String      @id @default(uuid())
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  userStoryId   String
+  userStory     UserStory   @relation(fields: [userStoryId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([requirementId, userStoryId])
+  @@map("requirement_user_stories")
+}
+
 enum UserStoryPriority {
   LOW
   MEDIUM
@@ -139,20 +152,21 @@ enum UserStoryStatus {
 }
 
 model UserStory {
-  id          String            @id @default(uuid())
-  title       String
-  description String?
-  status      UserStoryStatus   @default(TODO)
-  priority    UserStoryPriority @default(MEDIUM)
-  storyPoints Int?
-  order       Int               @default(0)
-  projectId   String
-  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  sprintId    String?
-  sprint      Sprint?         @relation(fields: [sprintId], references: [id], onDelete: SetNull)
-  tasks       Task[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id           String                 @id @default(uuid())
+  title        String
+  description  String?
+  status       UserStoryStatus        @default(TODO)
+  priority     UserStoryPriority      @default(MEDIUM)
+  storyPoints  Int?
+  order        Int                    @default(0)
+  projectId    String
+  project      Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprintId     String?
+  sprint       Sprint?                @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  tasks        Task[]
+  requirements RequirementUserStory[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 
   @@map("user_stories")
 }

@@ -284,5 +284,108 @@ export class RequirementController {
       next(error);
     }
   }
+
+  /**
+   * Link a requirement to a user story.
+   */
+  public static async linkUserStory(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const requirementId = req.params.id || req.params.requirementId;
+      const userStoryId = req.params.storyId || req.body.userStoryId || req.body.storyId;
+      const result = await RequirementService.linkUserStory(requirementId, userStoryId, req.user);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Unlink a requirement from a user story.
+   */
+  public static async unlinkUserStory(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const requirementId = req.params.id || req.params.requirementId;
+      const userStoryId = req.params.storyId || req.body.userStoryId || req.body.storyId;
+      const result = await RequirementService.unlinkUserStory(requirementId, userStoryId, req.user);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Get all user stories linked to a requirement.
+   */
+  public static async getLinkedStories(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const requirementId = req.params.id || req.params.requirementId;
+      const result = await RequirementService.getLinkedStories(requirementId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Get all requirements linked to a user story.
+   */
+  public static async getLinkedRequirementsForStory(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const storyId = req.params.id || req.params.storyId;
+      const result = await RequirementService.getLinkedRequirementsForStory(storyId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }
 

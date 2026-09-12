@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { UserStoryController } from '../controllers/userStory.controller';
 import { TaskController } from '../controllers/task.controller';
+import { RequirementController } from '../controllers/requirement.controller';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -14,6 +15,10 @@ router.get('/:id', UserStoryController.getUserStoryById);
 router.put('/:id', UserStoryController.updateUserStory);
 router.patch('/:id', UserStoryController.updateUserStory);
 router.delete('/:id', UserStoryController.deleteUserStory);
+
+// Linked Requirements on user story
+router.get('/:id/requirements', RequirementController.getLinkedRequirementsForStory);
+router.get('/:storyId/requirements', RequirementController.getLinkedRequirementsForStory);
 
 // Task routes on user story
 router.get('/:storyId/tasks', TaskController.getTasksByUserStory);
