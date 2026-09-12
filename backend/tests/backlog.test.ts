@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { Role, UserStoryStatus } from '@prisma/client';
+import { Role, UserStoryStatus, UserStoryPriority } from '@prisma/client';
 import { app } from '../src/app';
 import { prisma } from '../src/lib/prisma';
 import { config } from '../src/config';
@@ -281,8 +281,11 @@ describe('Product Backlog API', () => {
           title: 'Fourth Backlog Story',
           description: 'Story description',
           status: UserStoryStatus.TODO,
+          priority: UserStoryPriority.MEDIUM,
+          storyPoints: null,
           order: 3,
           projectId: 'proj-uuid-1',
+          sprintId: null,
         },
       });
     });
@@ -318,8 +321,11 @@ describe('Product Backlog API', () => {
           title: 'First Backlog Story',
           description: 'Story description',
           status: UserStoryStatus.TODO,
+          priority: UserStoryPriority.MEDIUM,
+          storyPoints: null,
           order: 0,
           projectId: 'proj-uuid-1',
+          sprintId: null,
         },
       });
     });

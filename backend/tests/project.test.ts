@@ -30,6 +30,9 @@ vi.mock('../src/lib/prisma', () => ({
       delete: vi.fn(),
       count: vi.fn(),
     },
+    task: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -509,6 +512,36 @@ describe('Project API', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.role).toBe(Role.TEAM_MEMBER);
+    });
+  });
+
+  describe('GET /api/projects/:id/board', () => {
+    it('should get project board successfully', async () => {
+      (prisma.project.findUnique as any).mockResolvedValue(mockProject);
+      (prisma.task.findMany as any).mockResolvedValue([
+        { id: 'task-1', status: 'TODO', userStoryId: 'story-1' },
+      ]);
+
+      const token = generateToken(teamMemberUser);
+      const response = await request(app)
+        .get('/api/projects/proj-uuid-1/board')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.TODO).toHaveLength(1);
+      expect(response.body.data.DONE).toHaveLength(0);
+    });
+
+    it('should return 403 if unauthorized user requests board', async () => {
+      (prisma.project.findUnique as any).mockResolvedValue(mockProject);
+      const outsider = { id: 'outsider', email: 'out@test.com', role: Role.TEAM_MEMBER };
+      const token = generateToken(outsider);
+
+      const response = await request(app)
+        .get('/api/projects/proj-uuid-1/board')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
     });
   });
 });

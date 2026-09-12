@@ -183,4 +183,22 @@ export class ProjectController {
       next(error);
     }
   }
+
+  public static async getProjectBoard(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const { id } = req.params;
+      const board = await ProjectService.getProjectBoard(id, req.user);
+      res.status(200).json({ success: true, data: board });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }

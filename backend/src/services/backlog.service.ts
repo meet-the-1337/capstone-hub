@@ -1,4 +1,4 @@
-import { Role, UserStoryStatus } from '@prisma/client';
+import { Role, UserStoryStatus, UserStoryPriority } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { CreateUserStoryDTO, UserStoryService } from './userStory.service';
@@ -15,6 +15,7 @@ export interface ReorderBacklogDTO {
 
 export interface BacklogQueryDTO {
   status?: UserStoryStatus;
+  priority?: UserStoryPriority;
 }
 
 export class BacklogService {
@@ -81,6 +82,7 @@ export class BacklogService {
     const where: {
       projectId: string;
       status?: UserStoryStatus;
+      priority?: UserStoryPriority;
     } = {
       projectId: project.id,
     };
@@ -93,6 +95,16 @@ export class BacklogService {
         );
       }
       where.status = query.status;
+    }
+
+    if (query?.priority) {
+      if (!Object.values(UserStoryPriority).includes(query.priority)) {
+        throw new AppError(
+          `Invalid user story priority. Allowed: ${Object.values(UserStoryPriority).join(', ')}`,
+          400
+        );
+      }
+      where.priority = query.priority;
     }
 
     const stories = await prisma.userStory.findMany({

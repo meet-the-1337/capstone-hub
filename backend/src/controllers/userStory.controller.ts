@@ -40,9 +40,10 @@ export class UserStoryController {
       }
       const { projectId } = req.params;
       const status = req.query.status as UserStoryStatus | undefined;
+      const priority = req.query.priority as any;
       const userStories = await UserStoryService.getUserStoriesByProjectId(
         projectId,
-        { status },
+        { status, priority },
         req.user
       );
       res.status(200).json({

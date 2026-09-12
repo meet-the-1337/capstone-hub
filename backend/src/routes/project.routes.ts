@@ -4,6 +4,8 @@ import { MilestoneController } from '../controllers/milestone.controller';
 import { RequirementController } from '../controllers/requirement.controller';
 import { UserStoryController } from '../controllers/userStory.controller';
 import { BacklogController } from '../controllers/backlog.controller';
+import { SprintController } from '../controllers/sprint.controller';
+import { ActivityLogController } from '../controllers/activityLog.controller';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -23,6 +25,9 @@ router.get('/:id', ProjectController.getProjectById);
 // Update project
 router.put('/:id', ProjectController.updateProject);
 router.patch('/:id', ProjectController.updateProject);
+
+// Project board
+router.get('/:id/board', ProjectController.getProjectBoard);
 // Team member routes
 router.get('/:id/members', ProjectController.getTeamMembers);
 router.post('/:id/members', ProjectController.addTeamMember);
@@ -54,6 +59,12 @@ router.get('/:projectId/product-backlog', BacklogController.getProjectBacklog);
 router.post('/:projectId/product-backlog', BacklogController.addStoryToBacklog);
 router.put('/:projectId/product-backlog/reorder', BacklogController.reorderBacklog);
 router.patch('/:projectId/product-backlog/reorder', BacklogController.reorderBacklog);
+
+// Sprint routes on project
+router.get('/:projectId/sprints', SprintController.getSprints);
+router.post('/:projectId/sprints', SprintController.createSprint);
+
+router.get('/:projectId/activity', ActivityLogController.getProjectActivityLogs);
 
 export default router;
 

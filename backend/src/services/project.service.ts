@@ -505,6 +505,39 @@ export class ProjectService {
 
     return updatedMember;
   }
+
+  public static async getProjectBoard(projectId: string, user?: { id: string; role: Role }) {
+    if (!projectId || !projectId.trim()) throw new AppError('Project ID is required', 400);
+    const project = await prisma.project.findUnique({
+      where: { id: projectId.trim() },
+      include: { team: { include: { members: true } } },
+    });
+    if (!project) throw new AppError('Project not found', 404);
+    
+    if (user) {
+      const isFaculty = user.role === Role.FACULTY || project.facultyId === user.id;
+      const isTeamMember = project.team && (project.team.leadId === user.id || project.team.members.some(m => m.userId === user.id));
+      if (!isFaculty && !isTeamMember) {
+        throw new AppError('Access denied: insufficient permissions', 403);
+      }
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: { userStory: { projectId: project.id } },
+      include: {
+        assignee: { select: { id: true, name: true, email: true } },
+        userStory: { select: { id: true, title: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return {
+      TODO: tasks.filter((t) => t.status === 'TODO'),
+      IN_PROGRESS: tasks.filter((t) => t.status === 'IN_PROGRESS'),
+      IN_REVIEW: tasks.filter((t) => t.status === 'IN_REVIEW'),
+      DONE: tasks.filter((t) => t.status === 'DONE'),
+    };
+  }
 }
 
 

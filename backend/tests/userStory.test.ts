@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import { Role, UserStoryStatus } from '@prisma/client';
+import { Role, UserStoryStatus, UserStoryPriority } from '@prisma/client';
 import { app } from '../src/app';
 import { prisma } from '../src/lib/prisma';
 import { config } from '../src/config';
@@ -75,6 +75,8 @@ describe('User Story API', () => {
     title: 'User Registration Story',
     description: 'As a student, I want to register so that I can join my capstone project team',
     status: UserStoryStatus.TODO,
+    priority: UserStoryPriority.MEDIUM,
+    storyPoints: 3,
     projectId: 'proj-uuid-1',
     project: mockProjectWithTeam,
     createdAt: new Date(),
@@ -86,6 +88,8 @@ describe('User Story API', () => {
     title: 'User Login Story',
     description: 'As a user, I want to authenticate so that I can access my projects',
     status: UserStoryStatus.IN_PROGRESS,
+    priority: UserStoryPriority.HIGH,
+    storyPoints: 5,
     projectId: 'proj-uuid-1',
     project: mockProjectWithTeam,
     createdAt: new Date(),
@@ -179,8 +183,11 @@ describe('User Story API', () => {
           title: 'User Registration Story',
           description: 'As a student, I want to register so that I can join my capstone project team',
           status: UserStoryStatus.TODO,
+          priority: UserStoryPriority.MEDIUM,
+          storyPoints: null,
           order: 0,
           projectId: 'proj-uuid-1',
+          sprintId: null,
         },
       });
     });
@@ -208,8 +215,11 @@ describe('User Story API', () => {
           title: 'User Login Story',
           description: 'As a user, I want to authenticate so that I can access my projects',
           status: UserStoryStatus.IN_PROGRESS,
+          priority: UserStoryPriority.MEDIUM,
+          storyPoints: null,
           order: 0,
           projectId: 'proj-uuid-1',
+          sprintId: null,
         },
       });
     });
@@ -361,6 +371,8 @@ describe('User Story API', () => {
         .send({
           title: 'Updated Story Title',
           status: UserStoryStatus.COMPLETED,
+          priority: UserStoryPriority.CRITICAL,
+          storyPoints: 8,
         });
 
       expect(response.status).toBe(200);
@@ -372,6 +384,8 @@ describe('User Story API', () => {
         data: {
           title: 'Updated Story Title',
           status: UserStoryStatus.COMPLETED,
+          priority: UserStoryPriority.CRITICAL,
+          storyPoints: 8,
         },
       });
     });

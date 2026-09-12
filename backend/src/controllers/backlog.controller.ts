@@ -15,7 +15,8 @@ export class BacklogController {
       }
       const projectId = req.params.projectId || (req.query.projectId as string);
       const status = req.query.status as UserStoryStatus | undefined;
-      const backlog = await BacklogService.getProjectBacklog(projectId, { status }, req.user);
+      const priority = req.query.priority as any;
+      const backlog = await BacklogService.getProjectBacklog(projectId, { status, priority }, req.user);
       res.status(200).json({
         success: true,
         data: backlog,
