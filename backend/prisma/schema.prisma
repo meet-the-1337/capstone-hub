@@ -26,6 +26,7 @@ model User {
   facultyReview Project[]      @relation("FacultyAdvisor")
   tasks         Task[]
   activityLogs  ActivityLog[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -240,3 +241,33 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@map("activity_logs")
 }
+
+enum NotificationType {
+  ASSIGNMENT
+  REVIEW
+  STATUS_CHANGE
+  MILESTONE
+  SYSTEM
+  GENERAL
+}
+
+model Notification {
+  id         String            @id @default(uuid())
+  title      String
+  message    String
+  type       NotificationType  @default(GENERAL)
+  entityType String?
+  entityId   String?
+  projectId  String?
+  read       Boolean           @default(false)
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([type])
+  @@map("notifications")
+}
+

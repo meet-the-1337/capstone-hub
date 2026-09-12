@@ -6,6 +6,7 @@ import { UserStoryController } from '../controllers/userStory.controller';
 import { BacklogController } from '../controllers/backlog.controller';
 import { SprintController } from '../controllers/sprint.controller';
 import { ActivityLogController } from '../controllers/activityLog.controller';
+import { NotificationController } from '../controllers/notification.controller';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -65,6 +66,10 @@ router.get('/:projectId/sprints', SprintController.getSprints);
 router.post('/:projectId/sprints', SprintController.createSprint);
 
 router.get('/:projectId/activity', ActivityLogController.getProjectActivityLogs);
+
+// Notification routes on project
+router.get('/:projectId/notifications', NotificationController.getProjectNotifications);
+router.post('/:projectId/notifications', NotificationController.createNotification);
 
 export default router;
 

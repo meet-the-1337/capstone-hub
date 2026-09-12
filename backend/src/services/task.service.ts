@@ -51,7 +51,7 @@ export class TaskService {
     const { title, description, status, assigneeId } = data;
     if (!title || !title.trim()) throw new AppError('Task title is required', 400);
 
-    let taskStatus = TaskStatus.TODO;
+    let taskStatus: TaskStatus = TaskStatus.TODO;
     if (status !== undefined) {
       if (!Object.values(TaskStatus).includes(status)) {
         throw new AppError('Invalid task status', 400);
