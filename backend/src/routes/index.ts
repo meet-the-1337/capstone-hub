@@ -9,6 +9,7 @@ import backlogRoutes from './backlog.routes';
 import sprintRoutes from './sprint.routes';
 import taskRoutes from './task.routes';
 import notificationRoutes from './notification.routes';
+import facultyRoutes from './faculty.routes';
 
 const apiRouter = Router();
 
@@ -24,5 +25,6 @@ apiRouter.use('/product-backlog', backlogRoutes);
 apiRouter.use('/sprints', sprintRoutes);
 apiRouter.use('/tasks', taskRoutes);
 apiRouter.use('/notifications', notificationRoutes);
+apiRouter.use('/faculty', facultyRoutes);
 
 export default apiRouter;
