@@ -9,6 +9,7 @@ import { ActivityLogController } from '../controllers/activityLog.controller';
 import { NotificationController } from '../controllers/notification.controller';
 import { GitHubController } from '../controllers/github.controller';
 import { BugController } from '../controllers/bug.controller';
+import { TraceabilityController } from '../controllers/traceability.controller';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -93,6 +94,11 @@ router.get('/:projectId/github/pull-requests', GitHubController.getRepoPullReque
 router.get('/:projectId/github/prs', GitHubController.getRepoPullRequests);
 router.get('/:projectId/github/contributors', GitHubController.getRepoContributors);
 router.get('/:projectId/github/activity', GitHubController.getRepoActivity);
+
+// Traceability routes on project
+router.get('/:projectId/traceability', TraceabilityController.getProjectTraceability);
+router.get('/:projectId/traceability/matrix', TraceabilityController.getTraceabilityMatrix);
+router.get('/:projectId/matrix', TraceabilityController.getTraceabilityMatrix);
 
 export default router;
 

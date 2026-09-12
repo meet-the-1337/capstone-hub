@@ -12,6 +12,7 @@ import notificationRoutes from './notification.routes';
 import facultyRoutes from './faculty.routes';
 import githubRoutes from './github.routes';
 import bugRoutes from './bug.routes';
+import traceabilityRoutes from './traceability.routes';
 
 const apiRouter = Router();
 
@@ -30,5 +31,6 @@ apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/faculty', facultyRoutes);
 apiRouter.use('/github', githubRoutes);
 apiRouter.use('/bugs', bugRoutes);
+apiRouter.use('/traceability', traceabilityRoutes);
 
 export default apiRouter;
