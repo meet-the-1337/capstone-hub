@@ -10,6 +10,18 @@ export interface ConnectGitHubRepoDTO {
   defaultBranch?: string;
 }
 
+export interface GetCommitsQueryDTO {
+  branch?: string;
+  sha?: string;
+  author?: string;
+  since?: string;
+  until?: string;
+  path?: string;
+  page?: number | string;
+  per_page?: number | string;
+  limit?: number | string;
+}
+
 export class GitHubService {
   /**
    * Helper to verify if user can manage GitHub settings for a project (FACULTY or TEAM_LEAD).
@@ -349,6 +361,94 @@ export class GitHubService {
       createdAt: rawData.created_at,
       updatedAt: rawData.updated_at,
       pushedAt: rawData.pushed_at,
+    };
+  }
+
+  /**
+   * Retrieve commits for a connected project's repository.
+   */
+  public static async getRepoCommits(
+    projectId: string,
+    query: GetCommitsQueryDTO,
+    user: { id: string; role: Role }
+  ) {
+    if (!projectId || typeof projectId !== 'string' || !projectId.trim()) {
+      throw new AppError('Project ID is required', 400);
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId.trim() },
+      include: {
+        team: {
+          include: {
+            members: true,
+          },
+        },
+        githubConnection: true,
+      },
+    });
+
+    if (!project) {
+      throw new AppError('Project not found', 404);
+    }
+
+    if (!this.canViewProjectGitHub(user, project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    if (!project.githubConnection) {
+      throw new AppError('No GitHub repository is connected to this project', 404);
+    }
+
+    const { repoOwner, repoName, defaultBranch } = project.githubConnection;
+    const branch = query.sha || query.branch || defaultBranch || 'main';
+    const page = Math.max(1, Number(query.page) || 1);
+    const perPage = Math.min(100, Math.max(1, Number(query.per_page || query.limit) || 30));
+
+    const params = new URLSearchParams();
+    if (branch) params.append('sha', branch);
+    if (query.author) params.append('author', query.author);
+    if (query.since) params.append('since', query.since);
+    if (query.until) params.append('until', query.until);
+    if (query.path) params.append('path', query.path);
+    params.append('page', String(page));
+    params.append('per_page', String(perPage));
+
+    const rawCommits = await this.fetchFromGitHub<any[]>(
+      `/repos/${repoOwner}/${repoName}/commits?${params.toString()}`,
+      project.githubConnection
+    );
+
+    const commits = Array.isArray(rawCommits)
+      ? rawCommits.map((item) => ({
+          sha: item.sha,
+          shortSha: item.sha ? item.sha.substring(0, 7) : '',
+          message: item.commit?.message || '',
+          htmlUrl: item.html_url || `https://github.com/${repoOwner}/${repoName}/commit/${item.sha}`,
+          author: {
+            name: item.commit?.author?.name || item.author?.login || 'Unknown',
+            email: item.commit?.author?.email || null,
+            date: item.commit?.author?.date || null,
+            username: item.author?.login || null,
+            avatarUrl: item.author?.avatar_url || null,
+          },
+          committer: {
+            name: item.commit?.committer?.name || item.committer?.login || 'Unknown',
+            email: item.commit?.committer?.email || null,
+            date: item.commit?.committer?.date || null,
+          },
+          parents: Array.isArray(item.parents) ? item.parents.map((p: any) => p.sha) : [],
+        }))
+      : [];
+
+    return {
+      repoOwner,
+      repoName,
+      branch,
+      page,
+      perPage,
+      totalCount: commits.length,
+      commits,
     };
   }
 }

@@ -16,4 +16,7 @@ router.get('/:projectId/connection', GitHubController.getConnection);
 router.get('/:projectId/metadata', GitHubController.getRepoMetadata);
 router.get('/:projectId/repo', GitHubController.getRepoMetadata);
 
+// GitHub commits routes
+router.get('/:projectId/commits', GitHubController.getRepoCommits);
+
 export default router;
