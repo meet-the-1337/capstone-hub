@@ -128,4 +128,29 @@ export class GitHubController {
       next(error);
     }
   }
+
+  /**
+   * Get GitHub branches for a project repository.
+   */
+  public static async getRepoBranches(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const projectId = req.params.projectId;
+      const result = await GitHubService.getRepoBranches(projectId, req.query, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }

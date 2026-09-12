@@ -19,4 +19,7 @@ router.get('/:projectId/repo', GitHubController.getRepoMetadata);
 // GitHub commits routes
 router.get('/:projectId/commits', GitHubController.getRepoCommits);
 
+// GitHub branches routes
+router.get('/:projectId/branches', GitHubController.getRepoBranches);
+
 export default router;
