@@ -15,4 +15,10 @@ router.delete('/:id', SprintController.deleteSprint);
 router.post('/:id/stories', SprintController.assignStories);
 router.get('/:id/board', SprintController.getSprintBoard);
 
+// Sprint - Task links
+router.post('/:id/tasks', SprintController.assignTasks);
+router.post('/:sprintId/tasks/:taskId', SprintController.assignTasks);
+router.delete('/:sprintId/tasks/:taskId', SprintController.removeTask);
+router.get('/:id/tasks', SprintController.getSprintTasks);
+
 export default router;

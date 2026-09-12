@@ -19,4 +19,11 @@ router.post('/:id/story', TaskController.linkTaskToStory);
 router.put('/:id/story', TaskController.linkTaskToStory);
 router.patch('/:id/story', TaskController.linkTaskToStory);
 
+// Task - Sprint links
+router.get('/:id/sprint', TaskController.getSprintByTask);
+router.post('/:id/sprint', TaskController.linkTaskToSprint);
+router.put('/:id/sprint', TaskController.linkTaskToSprint);
+router.patch('/:id/sprint', TaskController.linkTaskToSprint);
+router.delete('/:id/sprint', TaskController.unlinkTaskFromSprint);
+
 export default router;

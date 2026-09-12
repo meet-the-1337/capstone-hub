@@ -276,4 +276,151 @@ export class TaskService {
 
     return task.userStory;
   }
+
+  /**
+   * Link task directly to a sprint within the same project.
+   */
+  public static async linkTaskToSprint(
+    taskId: string,
+    sprintId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!taskId || !taskId.trim()) throw new AppError('Task ID is required', 400);
+    if (!sprintId || !sprintId.trim()) throw new AppError('Sprint ID is required', 400);
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId.trim() },
+      include: {
+        userStory: {
+          include: {
+            project: {
+              include: {
+                team: {
+                  include: {
+                    members: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!task) throw new AppError('Task not found', 404);
+    if (!this.canAccessProject(user, task.userStory.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const sprint = await prisma.sprint.findUnique({
+      where: { id: sprintId.trim() },
+    });
+
+    if (!sprint) throw new AppError('Sprint not found', 404);
+
+    if (sprint.projectId !== task.userStory.projectId) {
+      throw new AppError('Cannot link task to sprint in a different project', 400);
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id: task.id },
+      data: { sprintId: sprint.id },
+      include: {
+        userStory: true,
+        sprint: true,
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'Task linked to Sprint successfully',
+      task: updatedTask,
+    };
+  }
+
+  /**
+   * Unlink task from its sprint.
+   */
+  public static async unlinkTaskFromSprint(
+    taskId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!taskId || !taskId.trim()) throw new AppError('Task ID is required', 400);
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId.trim() },
+      include: {
+        userStory: {
+          include: {
+            project: {
+              include: {
+                team: {
+                  include: {
+                    members: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!task) throw new AppError('Task not found', 404);
+    if (!this.canAccessProject(user, task.userStory.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id: task.id },
+      data: { sprintId: null },
+    });
+
+    return {
+      message: 'Task unlinked from sprint successfully',
+      task: updatedTask,
+    };
+  }
+
+  /**
+   * Get the sprint for a task.
+   */
+  public static async getSprintByTask(taskId: string, user?: { id: string; role: Role }) {
+    if (!taskId || !taskId.trim()) throw new AppError('Task ID is required', 400);
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId.trim() },
+      include: {
+        sprint: true,
+        userStory: {
+          include: {
+            sprint: true,
+            project: {
+              include: {
+                team: {
+                  include: {
+                    members: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!task) throw new AppError('Task not found', 404);
+    if (user && !this.canAccessProject(user, task.userStory.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    return task.sprint || task.userStory.sprint || null;
+  }
 }

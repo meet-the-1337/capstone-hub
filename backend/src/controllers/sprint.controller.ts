@@ -129,4 +129,82 @@ export class SprintController {
       next(error);
     }
   }
+
+  /**
+   * Assign tasks directly to a sprint.
+   */
+  public static async assignTasks(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const sprintId = req.params.id || req.params.sprintId;
+      const taskIds = req.body.taskIds || (req.params.taskId ? [req.params.taskId] : req.body.taskId ? [req.body.taskId] : []);
+      const result = await SprintService.assignTasksToSprint(sprintId, taskIds, req.user);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Remove a task from a sprint.
+   */
+  public static async removeTask(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const sprintId = req.params.id || req.params.sprintId;
+      const taskId = req.params.taskId || req.body.taskId;
+      const result = await SprintService.removeTaskFromSprint(sprintId, taskId, req.user);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Get all tasks in a sprint.
+   */
+  public static async getSprintTasks(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const sprintId = req.params.id || req.params.sprintId;
+      const tasks = await SprintService.getSprintTasks(sprintId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: tasks,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }

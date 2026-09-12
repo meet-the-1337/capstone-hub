@@ -210,7 +210,12 @@ export class SprintService {
     if (user && !this.canAccessProject(user, sprint.project)) throw new AppError('Access denied: insufficient permissions', 403);
 
     const tasks = await prisma.task.findMany({
-      where: { userStory: { sprintId: sprint.id } },
+      where: {
+        OR: [
+          { sprintId: sprint.id },
+          { userStory: { sprintId: sprint.id } },
+        ],
+      },
       include: {
         assignee: { select: { id: true, name: true, email: true } },
         userStory: { select: { id: true, title: true } },
@@ -224,5 +229,115 @@ export class SprintService {
       IN_REVIEW: tasks.filter((t) => t.status === 'IN_REVIEW'),
       DONE: tasks.filter((t) => t.status === 'DONE'),
     };
+  }
+
+  /**
+   * Assign tasks to sprint with cross-project validation.
+   */
+  public static async assignTasksToSprint(
+    sprintId: string,
+    taskIds: string[],
+    user: { id: string; role: Role }
+  ) {
+    if (!sprintId || !sprintId.trim()) throw new AppError('Sprint ID is required', 400);
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      throw new AppError('taskIds must be a non-empty array of strings', 400);
+    }
+
+    const sprint = await prisma.sprint.findUnique({
+      where: { id: sprintId.trim() },
+      include: { project: { include: { team: { include: { members: true } } } } },
+    });
+    if (!sprint) throw new AppError('Sprint not found', 404);
+    if (!this.canAccessProject(user, sprint.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: { id: { in: taskIds } },
+      include: { userStory: true },
+    });
+
+    if (tasks.length !== taskIds.length) {
+      throw new AppError('One or more tasks not found', 404);
+    }
+
+    const mismatched = tasks.some((t: any) => t.userStory.projectId !== sprint.projectId);
+    if (mismatched) {
+      throw new AppError('All tasks must belong to the same project as the sprint', 400);
+    }
+
+    await prisma.task.updateMany({
+      where: { id: { in: taskIds } },
+      data: { sprintId: sprint.id },
+    });
+
+    return { message: 'Tasks successfully assigned to sprint', taskCount: tasks.length };
+  }
+
+  /**
+   * Remove a task from a sprint.
+   */
+  public static async removeTaskFromSprint(
+    sprintId: string,
+    taskId: string,
+    user: { id: string; role: Role }
+  ) {
+    if (!sprintId || !sprintId.trim()) throw new AppError('Sprint ID is required', 400);
+    if (!taskId || !taskId.trim()) throw new AppError('Task ID is required', 400);
+
+    const sprint = await prisma.sprint.findUnique({
+      where: { id: sprintId.trim() },
+      include: { project: { include: { team: { include: { members: true } } } } },
+    });
+    if (!sprint) throw new AppError('Sprint not found', 404);
+    if (!this.canAccessProject(user, sprint.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId.trim() },
+    });
+    if (!task) throw new AppError('Task not found', 404);
+    if (task.sprintId !== sprint.id) {
+      throw new AppError('Task is not assigned to this sprint', 400);
+    }
+
+    await prisma.task.update({
+      where: { id: task.id },
+      data: { sprintId: null },
+    });
+
+    return { message: 'Task removed from sprint successfully' };
+  }
+
+  /**
+   * Get all tasks in a sprint.
+   */
+  public static async getSprintTasks(sprintId: string, user?: { id: string; role: Role }) {
+    if (!sprintId || !sprintId.trim()) throw new AppError('Sprint ID is required', 400);
+
+    const sprint = await prisma.sprint.findUnique({
+      where: { id: sprintId.trim() },
+      include: { project: { include: { team: { include: { members: true } } } } },
+    });
+    if (!sprint) throw new AppError('Sprint not found', 404);
+    if (user && !this.canAccessProject(user, sprint.project)) {
+      throw new AppError('Access denied: insufficient permissions', 403);
+    }
+
+    return prisma.task.findMany({
+      where: {
+        OR: [
+          { sprintId: sprint.id },
+          { userStory: { sprintId: sprint.id } },
+        ],
+      },
+      include: {
+        assignee: { select: { id: true, name: true, email: true, role: true } },
+        userStory: { select: { id: true, title: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
   }
 }

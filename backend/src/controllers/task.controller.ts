@@ -144,4 +144,82 @@ export class TaskController {
       next(error);
     }
   }
+
+  /**
+   * Link task directly to a sprint.
+   */
+  public static async linkTaskToSprint(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const taskId = req.params.id || req.params.taskId;
+      const sprintId = req.body.sprintId || req.params.sprintId;
+      const result = await TaskService.linkTaskToSprint(taskId, sprintId, req.user);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result.task,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Unlink task from its sprint.
+   */
+  public static async unlinkTaskFromSprint(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const taskId = req.params.id || req.params.taskId;
+      const result = await TaskService.unlinkTaskFromSprint(taskId, req.user);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result.task,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * Get the sprint for a task.
+   */
+  public static async getSprintByTask(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+      const taskId = req.params.id || req.params.taskId;
+      const result = await TaskService.getSprintByTask(taskId, req.user);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }
