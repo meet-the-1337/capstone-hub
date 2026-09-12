@@ -7,6 +7,7 @@ import { BacklogController } from '../controllers/backlog.controller';
 import { SprintController } from '../controllers/sprint.controller';
 import { ActivityLogController } from '../controllers/activityLog.controller';
 import { NotificationController } from '../controllers/notification.controller';
+import { GitHubController } from '../controllers/github.controller';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -70,6 +71,14 @@ router.get('/:projectId/activity', ActivityLogController.getProjectActivityLogs)
 // Notification routes on project
 router.get('/:projectId/notifications', NotificationController.getProjectNotifications);
 router.post('/:projectId/notifications', NotificationController.createNotification);
+
+// GitHub connection routes on project
+router.get('/:projectId/github/connection', GitHubController.getConnection);
+router.get('/:projectId/github', GitHubController.getConnection);
+router.post('/:projectId/github/connect', GitHubController.connectRepository);
+router.post('/:projectId/github', GitHubController.connectRepository);
+router.delete('/:projectId/github/disconnect', GitHubController.disconnectRepository);
+router.delete('/:projectId/github', GitHubController.disconnectRepository);
 
 export default router;
 
